@@ -1,0 +1,31 @@
+- hosts: localhost
+  tasks:
+  - name: Install git
+    apt:
+      name: git
+      state: present
+
+  - name: Install nodejs
+    apt:
+      name: nodejs
+      state: present
+      
+  - name: Install npm
+    apt:
+      name: npm
+      state: present
+
+  - name: Download git repo
+    command: git clone https://github.com/bhushan9/checkbox.io
+
+  - name: npm install
+    command: npm install
+    args:
+      chdir: cd checkbox.io/server-side/site
+
+  - name: npm start
+    command: npm start
+    args:
+      chdir: cd checkbox.io/server-side/site
+
+

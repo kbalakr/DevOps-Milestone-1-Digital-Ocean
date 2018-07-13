@@ -1,0 +1,34 @@
+- hosts: localhost
+  tasks: 
+  - name: Create a vagrantfile
+    file:
+      content: |
+
+        Vagrant.configure(2) do |config|
+
+          config.vm.box = "ubuntu/trusty64"
+          config.vm.network "private_network", ip: "192.168.33.10"
+          config.vm.network "forwarded_port", guest: 8080, host: 8082
+
+          config.vm.provider "virtualbox" do |vb|
+            vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+          end
+
+          config.vm.provision :ansible do |ansible|
+            ansible.playbook = "provisionJenkins.yml"
+          end
+        end
+
+      dest: /home/DevOps/New
+
+  - name: Do vagrant up
+    command: vagrant up --provision
+    args:
+      chdir: /home/DevOps/New
+
+  - name: Create inventory file
+    file:
+      content: |
+        [nodes]
+        192.168.33.10 ansible_ssh_user=vagrant ansible_ssh_private_key_file=/home/bhushan/DevOps/New/.vagrant/machines/default/virtualbox/private_key
+      dest: /home/DevOps/New/inventory

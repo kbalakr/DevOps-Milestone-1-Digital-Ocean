@@ -1,0 +1,121 @@
+- hosts: all
+  become: yes
+  tasks:
+  - name: Install ca-certificates
+    apt: name=ca-certificates state=present
+
+  - name: Add key
+    apt_key:
+      url:  https://pkg.jenkins.io/debian-stable/jenkins.io.key
+      state: present
+  - name: Add repository
+    lineinfile: 
+      path: /etc/apt/sources.list
+      line: deb https://pkg.jenkins.io/debian-stable binary/
+
+  - name: Do update
+    apt:
+      update_cache: yes
+
+  - name: Add Jdk repository
+    apt_repository: repo='ppa:openjdk-r/ppa' state=present update_cache=yes 
+
+  - name: Install jdk
+    apt: name=openjdk-8-jdk state=present
+
+  - name: Install jre
+    apt: name=openjdk-8-jre state=present
+
+  - name: Install Jenskins
+    apt:
+      name: jenkins
+      state: present
+
+  - name: Install git
+    apt: 
+      name: git
+      state: present
+
+  - name: Install nodejs
+    apt:
+      name: nodejs-legacy
+      state: present
+      
+  - name: Install npm
+    apt:
+      name: npm
+      state: present
+
+  - name: Add repository
+    apt_repository: 
+      repo: ppa:ansible/ansible
+      state: present
+      update_cache: yes
+
+  - name: update
+    apt:
+      update_cache: yes
+
+  - name: Install ansible
+    apt:
+      name: ansible
+      state: present
+
+  - name: Install dopy
+    apt:
+      name: dopy
+      state: present
+  - name: Install passlib
+    apt: 
+      name: passlib
+      state: present
+
+  - name: get admin password
+    command: cat /var/lib/jenkins/secrets/initialAdminPassword
+    register: adminPassword
+
+  - name: debug
+    debug:
+      msg: "{{adminPassword.stdout}}"
+
+  - name: Get Jenkins crumb
+    uri:
+      user: admin
+      password: "{{adminPassword.stdout}}"
+      force_basic_auth: yes
+      url: "http://127.0.0.1:8080/crumbIssuer/api/json"
+      return_content: yes
+    register: jenkins_crumb
+    until: jenkins_crumb.content.find('Please wait while Jenkins is getting ready to work') == -1
+    retries: 10
+    delay: 5
+
+  - name: Set crumb token
+    set_fact:
+      jenkins_crumb_token: "{{ jenkins_crumb.json.crumbRequestField }}={{ jenkins_crumb.json.crumb }}"
+  
+  - name: Install plugins
+    uri:
+      user: admin
+      password: "{{adminPassword.stdout}}"
+      force_basic_auth: yes
+      url: "http://127.0.0.1:8080/pluginManager/install?plugin.{{ item }}.default=on&{{ jenkins_crumb_token }}"
+      method: POST
+      status_code: [200, 302]
+    #when: item not in jenkins_installed_plugins.json.plugins|map(attribute='shortName')|list
+    with_items: 
+      - git
+
+
+
+
+
+  
+
+
+
+
+
+
+
+

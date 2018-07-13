@@ -1,0 +1,45 @@
+- hosts: localhost
+  tasks:
+  - name: create a directory
+    file: 
+      path: /home/vagrant/node
+      state: directory  
+
+  - name: Do a vagrant init
+    command: vagrant init ubuntu/trusty32
+    args: 
+      chdir: /home/vagrant/node
+
+
+  - name: Edit the Vagrantfile
+    blockinfile: 
+      path: /home/vagrant/node/Vagrantfile
+      block: |
+        config.vm.provider "virtualbox" do |vb|
+          #   # Display the VirtualBox GUI when booting the machine
+          #   vb.gui = true
+          vb.cpus = 1
+          # change the network card hardware for better performance
+          vb.customize ["modifyvm", :id, "--nictype1", "virtio" ]
+          vb.customize ["modifyvm", :id, "--nictype2", "virtio" ]
+
+          # suggested fix for slow network performance
+          # see https://github.com/mitchellh/vagrant/issues/1807
+          vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+          vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+          #   # Customize the amount of memory on the VM:
+          vb.memory = "512"
+          config.vm.provision :ansible do |ansible|
+            ansible.playbook = "provisionCheckbox.yml"
+          end
+          
+        end
+  
+      insertafter: '#.*Example.*for.*VirtualBox:'
+
+  - name: Do a vagrant up
+    command: vagrant up
+    args: 
+      chdir: /home/vagrant/node
+    
+
